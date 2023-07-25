@@ -195,10 +195,6 @@ namespace LightGlue
                 dc.Width = imgControlWid;
                 System.Windows.Controls.Grid.SetColumn(dc,this.mImgList.IndexOf(v));
                 
-                if (this.mXOffset[v] == 0)
-                    dc.Margin = new Thickness(this.mXOffset[v] * xratio, 0, 0, 0);
-                else
-                    dc.Margin = new Thickness(imgControlWid - this.mXOffset[v] * xratio, 0, 0, 0);
 
                 if (type == UIType.KEYPOINT)
                 {
