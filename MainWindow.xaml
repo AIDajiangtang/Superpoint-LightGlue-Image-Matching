@@ -1,0 +1,30 @@
+﻿<Window x:Class="LightGlue.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LightGlue"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="600" Width="800" ResizeMode="NoResize">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="0.1*"/>
+            <RowDefinition Height="0.1*"/>
+            <RowDefinition Height="0.8*"/>
+        </Grid.RowDefinitions>
+        <DockPanel x:Name="mLoadImgGrid" Grid.Row="0" >
+            <Button x:Name="mImgSelButton" Content="Select Image" Height="30" Width="80" Click="SelectFileButton_Click"  Margin="50,0,0,0" VerticalAlignment="Center"/>
+            <TextBox x:Name="mImgPathTxt" Height="30" Text="Enter image path here" Width="350" Margin="50,0,0,0" VerticalAlignment="Center" />
+            <Button x:Name="mImgFeature" Content="Feature" Height="30" Click="ImgFeature_Click" Width="80"  Margin="30,0,0,0" VerticalAlignment="Center"/>
+            <Button x:Name="mImgMatch" Content="Match" Height="30" Click="ImgMatch_Click" Width="80"  Margin="30,0,0,0" VerticalAlignment="Center"/>
+        </DockPanel>
+        <Grid x:Name="mDynamicUI" Grid.Row="1" >
+            
+        </Grid>
+        <Canvas x:Name="mImgCanvas" Visibility="Visible" Grid.Row="2" >
+            <Image x:Name="mImage" Stretch="Fill"  
+                    Canvas.Left="0" Canvas.Top="0" Canvas.Right="0" Canvas.Bottom="0"/>
+
+        </Canvas>
+    </Grid>
+</Window>
