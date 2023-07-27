@@ -6,12 +6,11 @@
  ## 深度学习特征检测匹配算法</h2>  
 深度学习特征提取算法：SuperPoint，以及深度学习特征匹配算法：LightGlue。  
 SuperPoint：​  
-论文地址：https://arxiv.org/pdf/1712.07629.pdf  
-官方源码：https://github.com/rpautrat/SuperPoint  
+[[`Paper`](https://arxiv.org/pdf/1712.07629.pdf)] [[`源码`](https://github.com/rpautrat/SuperPoint )]  
+
 ​
 LightGlue:  
-论文地址：https://arxiv.org/pdf/2306.13643.pdf  
-官方源码：https://github.com/cvg/LightGlue  
+[[`Paper`](https://arxiv.org/pdf/2306.13643.pdf )] [[`源码`](https://github.com/cvg/LightGlue)]  
 
 
  ## 应用：基于superpoint和lightglue进行图像匹配</h2>  
