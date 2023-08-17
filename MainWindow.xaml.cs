@@ -292,15 +292,13 @@ namespace LightGlue
             return kps;
         }
         string GetInvalidPathName(string path)
-        {
-            char[] invalidChars = Path.GetInvalidFileNameChars();
-            string imgname = path.Clone() as string;
-            foreach (char c in invalidChars)
-            {
-                imgname = imgname.Replace(c.ToString(), "");
-                imgname = imgname.Replace(".", "");
-            }
-            return imgname;
+        {        
+            // 使用MD5哈希算法对输入字符串进行哈希处理
+            byte[] hashBytes = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.ASCII.GetBytes(path));
+
+            // 使用哈希值创建UUID
+            Guid uuid = new Guid(hashBytes);
+            return "T"+uuid.ToString().Replace("-", "");
         }
 
         /// <summary>
