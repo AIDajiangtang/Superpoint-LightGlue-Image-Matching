@@ -1,4 +1,4 @@
-﻿using Microsoft.ML.OnnxRuntime;
+using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using System;
 using System.Collections.Generic;
@@ -66,8 +66,18 @@ namespace LightGlue
         {
             InitializeComponent();
             this.InitUI();
-            this.LoadModel();         
+            this.LoadModel();
+
+            this.mImgList = new List<string>();
+            this.UI = Dispatcher.CurrentDispatcher;
+            this.SizeChanged += MainWindow_SizeChanged;
         }
+
+        private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            this.InitUI();
+        }
+
         /// <summary>
         /// 初始化图像控件
         /// </summary>
@@ -75,10 +85,10 @@ namespace LightGlue
         {
             this.mImage.Width = this.Width;
             this.mImage.Height = this.Height * 0.8f;
+            this.mImgCanvas.Width = this.Width;
+            this.mImgCanvas.Height = this.Height * 0.8f;
             this.mControlWid = this.mImage.Width;
-            this.mControlHei = this.mImage.Height;
-            this.mImgList = new List<string>();
-            this.UI = Dispatcher.CurrentDispatcher;
+            this.mControlHei = this.mImage.Height;          
         }
         /// <summary>
         /// Load ONNX format Model
@@ -195,7 +205,6 @@ namespace LightGlue
                 dc.Width = imgControlWid;
                 System.Windows.Controls.Grid.SetColumn(dc,this.mImgList.IndexOf(v));
                 
-
                 if (type == UIType.KEYPOINT)
                 {
                     System.Windows.Controls.TextBlock texpre = new System.Windows.Controls.TextBlock();
@@ -309,8 +318,8 @@ namespace LightGlue
                     float[] k1 = new float[keypoints1.Count];
                     for (int j = 0; j < keypoints1.Count / 2; j++)
                     {
-                        k1[2 * j] = (k1[2 * j] - this.mWidth[imgpath1]) / (float)this.mWidth[imgpath1];
-                        k1[2 * j + 1] = (k1[2 * j + 1] - this.mHeight[imgpath1]) / (float)this.mHeight[imgpath1];
+                        k1[2 * j] = (keypoints1[2 * j] - this.mWidth[imgpath1]) / (float)this.mWidth[imgpath1];
+                        k1[2 * j + 1] = (keypoints1[2 * j + 1] - this.mHeight[imgpath1]) / (float)this.mHeight[imgpath1];
                     }
                     var kp1t = new DenseTensor<float>(k1, this.mFeatureKeyPoints[imgpath1].Dimensions.ToArray());
 
@@ -319,8 +328,8 @@ namespace LightGlue
                     float[] k2 = new float[keypoints2.Count];
                     for (int j = 0; j < keypoints2.Count / 2; j++)
                     {
-                        k2[2 * j] = (k2[2 * j] - this.mWidth[imgpath2]) / (float)this.mWidth[imgpath2];
-                        k2[2 * j + 1] = (k2[2 * j + 1] - this.mHeight[imgpath2]) / (float)this.mHeight[imgpath2];
+                        k2[2 * j] = (keypoints2[2 * j] - this.mWidth[imgpath2]) / (float)this.mWidth[imgpath2];
+                        k2[2 * j + 1] = (keypoints2[2 * j + 1] - this.mHeight[imgpath2]) / (float)this.mHeight[imgpath2];
                     }
                     var kp2t = new DenseTensor<float>(k2, this.mFeatureKeyPoints[imgpath2].Dimensions.ToArray());
 
@@ -335,6 +344,7 @@ namespace LightGlue
 
                     var results = this.mLightGlue.Run(inputs3);
                     var match0 = results.First(o => o.Name == "matches0").AsTensor<Int64>();
+                    var matchScore0 = results.First(o => o.Name == "mscores0").AsTensor<float>().ToList();
                     var match1 = results.First(o => o.Name == "matches1").AsTensor<Int64>();
 
                     List<Int64> mt1 = new List<Int64>();
@@ -344,7 +354,7 @@ namespace LightGlue
 
                     for (int j = 0; j < match0List.Count; j++)
                     {
-                        if (match0List[j] > -1 && match1List[(int)match0List[j]] == j)
+                        if (match0List[j] > -1 && matchScore0[j]>0.0f && match1List[(int)match0List[j]] == j)
                         {
                             mt1.Add(j);
                             mt2.Add(match0List[j]);
@@ -497,13 +507,15 @@ namespace LightGlue
         void LoadImage()
         {
             this.ClearAllAnation();
+
+            Dictionary<string, byte[]> ColorData = new Dictionary<string, byte[]>();
             foreach (var img in this.mImgList)
             {               
                 Bitmap image = new Bitmap(img);
                 int width = image.Width;
                 int height = image.Height;
 
-                byte[] pixelbs = new byte[width * height];
+                byte[] pixelbs = new byte[4*width * height];
                 float[] pixels = new float[width * height];
                 for (int y = 0; y < height; y++)
                 {
@@ -513,9 +525,15 @@ namespace LightGlue
                         byte gray = (byte)((color.R + color.G + color.B) / 3); // 计算灰度值
                         int index = x + y * width;
                         pixels[index] = gray;
-                        pixelbs[index] = gray;
+
+                        int ind = y * width + x;
+                        pixelbs[4 * ind] = color.B;  // Blue
+                        pixelbs[4 * ind + 1] = color.G;  // Green
+                        pixelbs[4 * ind + 2] = color.R;  // Red
+                        pixelbs[4 * ind + 3] = 255;  // Alpha
                     }
                 }
+                ColorData[img] = pixelbs;
                 this.mImgDatas[img] = pixels;             
                 this.mWidth[img] = width;
                 this.mHeight[img] = height;
@@ -524,17 +542,17 @@ namespace LightGlue
             int stiImgWidth = 0;
             int stiImgHeight = 0;
             this.GetStiImgSize(ref stiImgWidth,ref stiImgHeight);
-            WriteableBitmap bp = new WriteableBitmap(stiImgWidth,stiImgHeight, 96, 96, System.Windows.Media.PixelFormats.Gray8, null);          
+            WriteableBitmap bp = new WriteableBitmap(stiImgWidth,stiImgHeight, 96, 96, System.Windows.Media.PixelFormats.Pbgra32, null);          
             int widthoffset = 0;
             foreach (var img in this.mImgList)
             {
-                byte[] imgb = new byte[this.mImgDatas[img].Count()];
-                for (int i=0;i< imgb.Count();i++)
-                {
-                    imgb[i] = (byte)this.mImgDatas[img][i];
-                }
+                //byte[] imgb = new byte[this.mImgDatas[img].Count()];
+                //for (int i=0;i< imgb.Count();i++)
+                //{
+                //    imgb[i] = (byte)this.mImgDatas[img][i];
+                //}
                 this.mXOffset[img] = widthoffset;
-                bp.WritePixels(new Int32Rect(widthoffset, 0, this.mWidth[img], this.mHeight[img]), imgb, this.mWidth[img], 0);
+                bp.WritePixels(new Int32Rect(widthoffset, 0, this.mWidth[img], this.mHeight[img]), ColorData[img], this.mWidth[img]*4, 0);
                 widthoffset += this.mWidth[img];
             }
             UI.BeginInvoke(new Action(delegate
@@ -558,7 +576,6 @@ namespace LightGlue
 
     }
 
-
     class Transforms
     {
         public Transforms()
@@ -571,14 +588,20 @@ namespace LightGlue
         /// <returns></returns>
         public float[] ApplyImage(float[] bp)
         {
-            //计算均值
-            float mean = (float)MathNet.Numerics.Statistics.Statistics.Mean(bp);
-            //计算标准差
-            float stdDev = (float)MathNet.Numerics.Statistics.Statistics.StandardDeviation(bp);
+            ////计算均值
+            //float mean = (float)MathNet.Numerics.Statistics.Statistics.Mean(bp);
+            ////计算标准差
+            //float stdDev = (float)MathNet.Numerics.Statistics.Statistics.StandardDeviation(bp);
+
+            //for (int i = 0; i < bp.Count(); i++)
+            //{
+            //    bp[i] = (bp[i] - mean) / stdDev;
+            //}
+            //return bp;
 
             for (int i = 0; i < bp.Count(); i++)
             {
-                bp[i] = (bp[i] - mean) / stdDev;
+                bp[i] = bp[i]/255.0f;
             }
             return bp;
         }
